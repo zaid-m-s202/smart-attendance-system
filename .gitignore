@@ -1,0 +1,26 @@
+# Python cache
+__pycache__/
+*.py[cod]
+*.cpython-*
+
+# Virtual environments
+.env
+.venv
+env/
+venv/
+
+# VS Code
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Model artifacts
+models/*.pkl
+
+# Logs
+attendance_logs/*.csv
+
+# Dataset images
+student_faces/
