@@ -2,6 +2,8 @@ import os
 
 # ── Base Directory ─────────────────────────────────────────────
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# ── Recognition Modes ──────────────────────────────────────────
+UPLOAD_SCAN_FOLDER     = os.path.join(BASE_DIR, "upload_scan")
 
 # ── Paths ──────────────────────────────────────────────────────
 KNOWN_FACES_DIR    = os.path.join(BASE_DIR, "student_faces")
@@ -26,3 +28,16 @@ TIME_FORMAT        = "%H:%M:%S"
 
 # ── Confidence Display ─────────────────────────────────────────
 SHOW_CONFIDENCE    = True  # Show match % on screen for debugging
+CSV_RETENTION_HOURS = 12
+
+# Burst capture
+BURST_PHOTO_COUNT      = 3       # Number of photos to take
+BURST_INTERVAL_SECS    = 5       # Seconds between each photo
+BURST_THRESHOLD        = 3       # Must appear in all 3 to be Present
+
+# Lecture mode
+LECTURE_PHOTO_COUNT    = 5       # Total photos per lecture
+LECTURE_DURATION_MINS  = 55      # Total lecture duration in minutes
+LECTURE_FIRST_OFFSET   = 2.5     # Minutes after start for first photo
+LECTURE_LAST_OFFSET    = 1.5     # Minutes before end for last photo
+LECTURE_THRESHOLD      = 3       # Must appear in 3 of 5 to be Present
