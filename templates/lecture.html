@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Lecture Attendance</h1>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Select Lecture</h2>
+    <div class="select-row">
+        <select class="select-input" onchange="window.location='/lecture/'+this.value">
+            <option value="">— Select a lecture —</option>
+            {% for lec in lectures %}
+            <option value="{{ lec.id }}"
+                {{ 'selected' if selected and selected.id == lec.id }}>
+                {{ lec.subject }} — {{ lec.date }} {{ lec.start_time }}
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+{% if selected and records %}
+<!-- Summary -->
+<div class="card-row">
+    <div class="card stat-card">
+        <div class="stat-number text-present">{{ present_count }}</div>
+        <div class="stat-label">Present</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-number text-absent">{{ absent_count }}</div>
+        <div class="stat-label">Absent</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-number">{{ total_count }}</div>
+        <div class="stat-label">Total</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-number text-present">
+            {% if total_count > 0 %}
+                {{ ((present_count / total_count) * 100) | round(1) }}%
+            {% else %}0%{% endif %}
+        </div>
+        <div class="stat-label">Rate</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-toolbar">
+        <h2 class="card-title">{{ selected.subject }} — {{ selected.date }}</h2>
+        <a href="/export/lecture/{{ selected.id }}" class="btn btn-outline">⬇ Export CSV</a>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Photos Detected</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in records %}
+            <tr>
+                <td>{{ r.student_id }}</td>
+                <td>{{ r.name }}</td>
+                <td>{{ r.photos_detected }} / 5</td>
+                <td>
+                    {% if r.status == 'Present' %}
+                        <span class="badge badge-present">✓ Present</span>
+                    {% else %}
+                        <span class="badge badge-absent">✗ Absent</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Student History</h1>
+</div>
+
+<div class="card">
+    <h2 class="card-title">Select Student</h2>
+    <div class="select-row">
+        <select class="select-input" onchange="window.location='/student/'+this.value">
+            <option value="">— Select a student —</option>
+            {% for s in students %}
+            <option value="{{ s.student_id }}"
+                {{ 'selected' if selected_id and selected_id == s.student_id|string }}>
+                {{ s.name }} (ID: {{ s.student_id }})
+            </option>
+            {% endfor %}
+        </select>
+    </div>
+</div>
+
+{% if selected_id and records is defined %}
+<!-- Summary -->
+<div class="card-row">
+    <div class="card stat-card">
+        <div class="stat-number text-present">{{ present }}</div>
+        <div class="stat-label">Present</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-number text-absent">{{ absent }}</div>
+        <div class="stat-label">Absent</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-number">{{ total }}</div>
+        <div class="stat-label">Total Lectures</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-number
+            {% if percentage >= 75 %}text-present
+            {% elif percentage >= 50 %}text-warning
+            {% else %}text-absent{% endif %}">
+            {{ percentage }}%
+        </div>
+        <div class="stat-label">Attendance %</div>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card-title">{{ name }} — Attendance History</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Subject</th>
+                <th>Time</th>
+                <th>Photos</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in records %}
+            <tr>
+                <td>{{ r.date }}</td>
+                <td>{{ r.subject }}</td>
+                <td>{{ r.start_time }}</td>
+                <td>{{ r.photos_detected }} / 5</td>
+                <td>
+                    {% if r.status == 'Present' %}
+                        <span class="badge badge-present">✓ Present</span>
+                    {% else %}
+                        <span class="badge badge-absent">✗ Absent</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% endblock %}

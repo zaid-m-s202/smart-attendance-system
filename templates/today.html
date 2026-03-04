@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Today's Attendance</h1>
+    <p>{{ date }}</p>
+</div>
+
+<!-- Summary -->
+<div class="card-row">
+    <div class="card stat-card">
+        <div class="stat-number text-present">{{ present_count }}</div>
+        <div class="stat-label">Present</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-number text-absent">{{ absent_count }}</div>
+        <div class="stat-label">Absent</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-number">{{ total_count }}</div>
+        <div class="stat-label">Total Students</div>
+    </div>
+    <div class="card stat-card">
+        <div class="stat-number text-present">
+            {% if total_count > 0 %}
+                {{ ((present_count / total_count) * 100) | round(1) }}%
+            {% else %}
+                0%
+            {% endif %}
+        </div>
+        <div class="stat-label">Attendance Rate</div>
+    </div>
+</div>
+
+<!-- Export Button -->
+<div class="card">
+    <div class="card-toolbar">
+        <h2 class="card-title">Attendance Records</h2>
+        <a href="/export/today" class="btn btn-outline">⬇ Export CSV</a>
+    </div>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Time Marked</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for r in records %}
+            <tr>
+                <td>{{ r.student_id }}</td>
+                <td>{{ r.name }}</td>
+                <td>
+                    {% if r.status == 'Present' %}
+                        <span class="badge badge-present">✓ Present</span>
+                    {% else %}
+                        <span class="badge badge-absent">✗ Absent</span>
+                    {% endif %}
+                </td>
+                <td>{{ r.time if r.time else '—' }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% endblock %}

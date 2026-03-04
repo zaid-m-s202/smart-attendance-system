@@ -1,0 +1,393 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Upload Photos for Attendance</h1>
+    <p>Upload up to 5 photos — students present in 3 or more will be marked Present</p>
+</div>
+
+<!-- Upload Card -->
+<div class="card">
+    <h2 class="card-title">📤 Select Photos</h2>
+
+    <div class="upload-zone" id="upload-zone">
+        <div class="upload-icon">🖼️</div>
+        <p class="upload-text">Drag & drop photos here or click to browse</p>
+        <p class="upload-sub">Maximum 5 photos — JPG, JPEG, PNG accepted</p>
+        <input type="file" id="photo-input" multiple accept=".jpg,.jpeg,.png"
+               style="display:none" onchange="handleFiles(this.files)">
+        <button class="btn btn-outline" onclick="document.getElementById('photo-input').click()">
+            Browse Photos
+        </button>
+    </div>
+
+    <!-- Preview selected photos -->
+    <div id="preview-section" style="display:none; margin-top:1.5rem;">
+        <h3 class="section-label">Selected Photos</h3>
+        <div class="photo-preview-grid" id="preview-grid"></div>
+        <div class="upload-actions">
+            <button class="btn btn-secondary" onclick="processPhotos()" id="btn-process">
+                Process Attendance
+            </button>
+            <button class="btn btn-outline" onclick="clearPhotos()">
+                Clear
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Processing Status -->
+<div class="card" id="processing-card" style="display:none;">
+    <h2 class="card-title">
+        ⟳ Processing Photos
+        <span class="spinner" id="upload-spinner"></span>
+    </h2>
+    <div class="progress-bar-wrapper">
+        <div class="progress-bar" id="upload-progress"></div>
+    </div>
+    <p class="progress-text" id="upload-progress-text">Analyzing photos...</p>
+</div>
+
+<!-- Per Photo Results -->
+<div class="card" id="photo-results-card" style="display:none;">
+    <h2 class="card-title">📸 Photo Analysis Results</h2>
+    <div id="photo-results-list"></div>
+</div>
+
+<!-- Final Attendance Results -->
+<div class="card" id="attendance-results-card" style="display:none;">
+    <h2 class="card-title">✅ Attendance Results</h2>
+
+    <div class="card-row" id="summary-stats"></div>
+
+    <table class="table" id="attendance-table">
+        <thead>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Photos Detected</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody id="attendance-tbody"></tbody>
+    </table>
+</div>
+
+<style>
+.upload-zone {
+    border: 2px dashed #c0cce0;
+    border-radius: 12px;
+    padding: 3rem 2rem;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+
+.upload-zone:hover,
+.upload-zone.dragover {
+    border-color: #4f8ef7;
+    background: #f0f6ff;
+}
+
+.upload-icon  { font-size: 3rem; margin-bottom: 1rem; }
+
+.upload-text  {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.3rem;
+}
+
+.upload-sub   { font-size: 0.85rem; color: #888; margin-bottom: 1.2rem; }
+
+.section-label {
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #888;
+    margin-bottom: 1rem;
+}
+
+.photo-preview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.preview-item {
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 2px solid #e8ecf0;
+}
+
+.preview-item img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    display: block;
+}
+
+.preview-label {
+    font-size: 0.75rem;
+    text-align: center;
+    padding: 0.3rem;
+    color: #555;
+    background: #f9fafb;
+}
+
+.upload-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.photo-result-item {
+    border: 1px solid #e8ecf0;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.8rem;
+}
+
+.photo-result-header {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.photo-result-faces {
+    font-size: 0.88rem;
+    color: #555;
+}
+
+.face-detected {
+    display: inline-block;
+    background: #d4edda;
+    color: #155724;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    margin: 0.2rem;
+    font-size: 0.82rem;
+}
+
+.no-face {
+    color: #aaa;
+    font-style: italic;
+}
+</style>
+
+<script>
+let selectedFiles = [];
+
+// ── Drag and Drop ──────────────────────────────────────────
+const zone = document.getElementById("upload-zone");
+
+zone.addEventListener("dragover", e => {
+    e.preventDefault();
+    zone.classList.add("dragover");
+});
+
+zone.addEventListener("dragleave", () => zone.classList.remove("dragover"));
+
+zone.addEventListener("drop", e => {
+    e.preventDefault();
+    zone.classList.remove("dragover");
+    handleFiles(e.dataTransfer.files);
+});
+
+// ── Handle File Selection ──────────────────────────────────
+function handleFiles(files) {
+    const valid  = Array.from(files).filter(f =>
+        ["image/jpeg", "image/jpg", "image/png"].includes(f.type)
+    );
+
+    if (valid.length === 0) {
+        alert("Please select JPG or PNG images only");
+        return;
+    }
+
+    if (valid.length > 5) {
+        alert("Maximum 5 photos allowed. Only first 5 will be used.");
+        selectedFiles = valid.slice(0, 5);
+    } else {
+        selectedFiles = valid;
+    }
+
+    showPreviews();
+}
+
+function showPreviews() {
+    const grid    = document.getElementById("preview-grid");
+    const section = document.getElementById("preview-section");
+
+    grid.innerHTML = "";
+
+    selectedFiles.forEach((file, i) => {
+        const reader = new FileReader();
+        reader.onload = e => {
+            grid.innerHTML += `
+                <div class="preview-item">
+                    <img src="${e.target.result}" alt="Photo ${i+1}">
+                    <div class="preview-label">Photo ${i+1}</div>
+                </div>`;
+        };
+        reader.readAsDataURL(file);
+    });
+
+    section.style.display = "block";
+
+    // Hide previous results
+    ["photo-results-card", "attendance-results-card",
+     "processing-card"].forEach(id => {
+        document.getElementById(id).style.display = "none";
+    });
+}
+
+function clearPhotos() {
+    selectedFiles = [];
+    document.getElementById("preview-section").style.display   = "none";
+    document.getElementById("photo-input").value               = "";
+    ["photo-results-card", "attendance-results-card",
+     "processing-card"].forEach(id => {
+        document.getElementById(id).style.display = "none";
+    });
+}
+
+// ── Process Photos ─────────────────────────────────────────
+function processPhotos() {
+    if (selectedFiles.length === 0) {
+        alert("Please select photos first");
+        return;
+    }
+
+    if (selectedFiles.length < 3) {
+        if (!confirm(`You selected only ${selectedFiles.length} photo(s). At least 3 are needed for a student to be marked Present. Continue anyway?`))
+            return;
+    }
+
+    // Show processing card
+    document.getElementById("processing-card").style.display        = "block";
+    document.getElementById("photo-results-card").style.display     = "none";
+    document.getElementById("attendance-results-card").style.display = "none";
+    document.getElementById("btn-process").disabled                  = true;
+
+    // Animate progress bar
+    let progress = 0;
+    const bar    = document.getElementById("upload-progress");
+    const text   = document.getElementById("upload-progress-text");
+    const ticker = setInterval(() => {
+        progress = Math.min(progress + 5, 90);
+        bar.style.width = progress + "%";
+    }, 300);
+
+    // Build form data
+    const formData = new FormData();
+    selectedFiles.forEach(f => formData.append("photos", f));
+
+    fetch("/process_uploads", {
+        method : "POST",
+        body   : formData
+    })
+    .then(r => r.json())
+    .then(data => {
+        clearInterval(ticker);
+        bar.style.width = "100%";
+        text.textContent = "Processing complete!";
+
+        if (data.error) {
+            alert(data.error);
+            document.getElementById("btn-process").disabled = false;
+            return;
+        }
+
+        setTimeout(() => {
+            document.getElementById("processing-card").style.display = "none";
+            showPhotoResults(data.photo_results);
+            showAttendanceResults(data);
+            document.getElementById("btn-process").disabled = false;
+        }, 500);
+    })
+    .catch(err => {
+        clearInterval(ticker);
+        alert("Error processing photos: " + err);
+        document.getElementById("btn-process").disabled = false;
+    });
+}
+
+// ── Show Per Photo Results ─────────────────────────────────
+function showPhotoResults(results) {
+    const card = document.getElementById("photo-results-card");
+    const list = document.getElementById("photo-results-list");
+
+    list.innerHTML = results.map(r => `
+        <div class="photo-result-item">
+            <div class="photo-result-header">
+                📸 Photo ${r.photo} — ${r.filename}
+            </div>
+            <div class="photo-result-faces">
+                ${r.error
+                    ? `<span class="no-face">Error: ${r.error}</span>`
+                    : r.detected.length === 0
+                        ? `<span class="no-face">No known faces detected</span>`
+                        : r.detected.map(d =>
+                            `<span class="face-detected">
+                                ✓ ${d.name} (${d.confidence}%)
+                            </span>`
+                          ).join("")
+                }
+            </div>
+        </div>
+    `).join("");
+
+    card.style.display = "block";
+}
+
+// ── Show Final Attendance Results ──────────────────────────
+function showAttendanceResults(data) {
+    const card  = document.getElementById("attendance-results-card");
+    const stats = document.getElementById("summary-stats");
+    const tbody = document.getElementById("attendance-tbody");
+
+    stats.innerHTML = `
+        <div class="card stat-card">
+            <div class="stat-number text-present">${data.present}</div>
+            <div class="stat-label">Present</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-number text-absent">${data.absent}</div>
+            <div class="stat-label">Absent</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-number">${data.total_photos}</div>
+            <div class="stat-label">Photos Used</div>
+        </div>
+        <div class="card stat-card">
+            <div class="stat-number text-present">
+                ${data.present + data.absent > 0
+                    ? Math.round((data.present / (data.present + data.absent)) * 100)
+                    : 0}%
+            </div>
+            <div class="stat-label">Attendance Rate</div>
+        </div>
+    `;
+
+    tbody.innerHTML = data.attendance.map(a => `
+        <tr>
+            <td>${a.student_id}</td>
+            <td>${a.name}</td>
+            <td>${a.photos_detected} / ${a.total_photos}</td>
+            <td>
+                ${a.status === "Present"
+                    ? '<span class="badge badge-present">✓ Present</span>'
+                    : '<span class="badge badge-absent">✗ Absent</span>'
+                }
+            </td>
+        </tr>
+    `).join("");
+
+    card.style.display = "block";
+    card.scrollIntoView({ behavior: "smooth" });
+}
+</script>
+
+{% endblock %}
