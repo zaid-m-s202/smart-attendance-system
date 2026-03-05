@@ -3,8 +3,10 @@
 
 <div class="page-header">
     <h1>Student History</h1>
+    <p>Attendance records are isolated per mode — Demo and Upload are independent</p>
 </div>
 
+<!-- Student Selector -->
 <div class="card">
     <h2 class="card-title">Select Student</h2>
     <div class="select-row">
@@ -20,63 +22,243 @@
     </div>
 </div>
 
-{% if selected_id and records is defined %}
-<!-- Summary -->
+{% if selected_id %}
+
+<!-- Per-mode summary cards -->
 <div class="card-row">
-    <div class="card stat-card">
-        <div class="stat-number text-present">{{ present }}</div>
-        <div class="stat-label">Present</div>
-    </div>
-    <div class="card stat-card">
-        <div class="stat-number text-absent">{{ absent }}</div>
-        <div class="stat-label">Absent</div>
-    </div>
-    <div class="card stat-card">
-        <div class="stat-number">{{ total }}</div>
-        <div class="stat-label">Total Lectures</div>
-    </div>
-    <div class="card stat-card">
-        <div class="stat-number
-            {% if percentage >= 75 %}text-present
-            {% elif percentage >= 50 %}text-warning
-            {% else %}text-absent{% endif %}">
-            {{ percentage }}%
+    <!-- Demo stats -->
+    <div class="card" style="border-top: 4px solid #4f8ef7;">
+        <div class="card-label">⚡ Demo Mode</div>
+        <div style="display:flex; gap:1.5rem; margin-top:0.8rem; align-items:center;">
+            <div style="text-align:center;">
+                <div class="stat-number text-present">{{ demo_stats.present }}</div>
+                <div class="stat-label">Present</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="stat-number text-absent">{{ demo_stats.absent }}</div>
+                <div class="stat-label">Absent</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="stat-number">{{ demo_stats.total }}</div>
+                <div class="stat-label">Sessions</div>
+            </div>
+            <div style="text-align:center; margin-left:auto;">
+                <div class="stat-number
+                    {% if demo_stats.percentage >= 75 %}text-present
+                    {% elif demo_stats.percentage >= 50 %}text-warning
+                    {% else %}text-absent{% endif %}">
+                    {{ demo_stats.percentage }}%
+                </div>
+                <div class="stat-label">Demo %</div>
+            </div>
         </div>
-        <div class="stat-label">Attendance %</div>
+    </div>
+
+    <!-- Upload stats -->
+    <div class="card" style="border-top: 4px solid #27ae60;">
+        <div class="card-label">📤 Upload Mode</div>
+        <div style="display:flex; gap:1.5rem; margin-top:0.8rem; align-items:center;">
+            <div style="text-align:center;">
+                <div class="stat-number text-present">{{ upload_stats.present }}</div>
+                <div class="stat-label">Present</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="stat-number text-absent">{{ upload_stats.absent }}</div>
+                <div class="stat-label">Absent</div>
+            </div>
+            <div style="text-align:center;">
+                <div class="stat-number">{{ upload_stats.total }}</div>
+                <div class="stat-label">Sessions</div>
+            </div>
+            <div style="text-align:center; margin-left:auto;">
+                <div class="stat-number
+                    {% if upload_stats.percentage >= 75 %}text-present
+                    {% elif upload_stats.percentage >= 50 %}text-warning
+                    {% else %}text-absent{% endif %}">
+                    {{ upload_stats.percentage }}%
+                </div>
+                <div class="stat-label">Upload %</div>
+            </div>
+        </div>
     </div>
 </div>
 
+<!-- Tabbed history -->
 <div class="card">
-    <h2 class="card-title">{{ name }} — Attendance History</h2>
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Date</th>
-                <th>Subject</th>
-                <th>Time</th>
-                <th>Photos</th>
-                <th>Status</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for r in records %}
-            <tr>
-                <td>{{ r.date }}</td>
-                <td>{{ r.subject }}</td>
-                <td>{{ r.start_time }}</td>
-                <td>{{ r.photos_detected }} / 5</td>
-                <td>
-                    {% if r.status == 'Present' %}
-                        <span class="badge badge-present">✓ Present</span>
-                    {% else %}
-                        <span class="badge badge-absent">✗ Absent</span>
-                    {% endif %}
-                </td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:1.2rem;">
+        <h2 class="card-title" style="margin-bottom:0;">{{ name }} — Session History</h2>
+        <div class="tab-bar">
+            <button class="tab-btn active" id="tab-demo"   onclick="switchTab('demo')">
+                ⚡ Demo
+                <span class="tab-count">{{ demo_records|length }}</span>
+            </button>
+            <button class="tab-btn"        id="tab-upload" onclick="switchTab('upload')">
+                📤 Upload
+                <span class="tab-count">{{ upload_records|length }}</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Demo tab -->
+    <div id="panel-demo">
+        {% if demo_records %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Subject</th>
+                    <th>Photos Detected</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in demo_records %}
+                <tr>
+                    <td>{{ r.date }}</td>
+                    <td>{{ r.start_time }}</td>
+                    <td>{{ r.subject or '—' }}</td>
+                    <td>{{ r.photos_detected }} / {{ r.total_photos }}</td>
+                    <td>
+                        {% if r.status == 'Present' %}
+                            <span class="badge badge-present">✓ Present</span>
+                        {% else %}
+                            <span class="badge badge-absent">✗ Absent</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">⚡</div>
+            <p>No demo sessions recorded yet for {{ name }}.</p>
+            <p class="empty-sub">Run a Demo Mode session from the Dashboard to see records here.</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Upload tab -->
+    <div id="panel-upload" style="display:none;">
+        {% if upload_records %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Subject</th>
+                    <th>Photos Detected</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for r in upload_records %}
+                <tr>
+                    <td>{{ r.date }}</td>
+                    <td>{{ r.start_time }}</td>
+                    <td>{{ r.subject or '—' }}</td>
+                    <td>{{ r.photos_detected }} / {{ r.total_photos }}</td>
+                    <td>
+                        {% if r.status == 'Present' %}
+                            <span class="badge badge-present">✓ Present</span>
+                        {% else %}
+                            <span class="badge badge-absent">✗ Absent</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📤</div>
+            <p>No upload sessions recorded yet for {{ name }}.</p>
+            <p class="empty-sub">Upload photos from the Upload page to see records here.</p>
+        </div>
+        {% endif %}
+    </div>
 </div>
+
 {% endif %}
+
+<style>
+.tab-bar {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.tab-btn {
+    padding: 0.5rem 1.2rem;
+    border: 2px solid #e8ecf0;
+    border-radius: 8px;
+    background: #fff;
+    color: #666;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab-btn:hover {
+    border-color: #4f8ef7;
+    color: #4f8ef7;
+}
+
+.tab-btn.active {
+    background: #1a1a2e;
+    border-color: #1a1a2e;
+    color: #fff;
+}
+
+.tab-count {
+    background: rgba(255,255,255,0.2);
+    padding: 0.1rem 0.5rem;
+    border-radius: 20px;
+    font-size: 0.78rem;
+}
+
+.tab-btn:not(.active) .tab-count {
+    background: #f0f2f5;
+    color: #888;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #aaa;
+}
+
+.empty-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+}
+
+.empty-state p {
+    font-size: 0.95rem;
+    color: #888;
+}
+
+.empty-sub {
+    font-size: 0.82rem !important;
+    color: #bbb !important;
+    margin-top: 0.3rem;
+}
+</style>
+
+<script>
+function switchTab(mode) {
+    // Toggle panels
+    document.getElementById("panel-demo").style.display   = mode === "demo"   ? "block" : "none";
+    document.getElementById("panel-upload").style.display = mode === "upload" ? "block" : "none";
+
+    // Toggle button active state
+    document.getElementById("tab-demo").classList.toggle("active",   mode === "demo");
+    document.getElementById("tab-upload").classList.toggle("active", mode === "upload");
+}
+</script>
 
 {% endblock %}

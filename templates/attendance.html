@@ -1,0 +1,282 @@
+{% extends "base.html" %}
+{% block content %}
+
+<div class="page-header">
+    <h1>📅 Attendance Calendar</h1>
+    <p>View attendance by date or by individual student</p>
+</div>
+
+<div class="card" style="padding:1rem 1.5rem;">
+    <div style="display:flex; gap:0.8rem; align-items:center;">
+        <span style="font-size:0.85rem; color:#888; font-weight:600;">VIEW BY:</span>
+        <button class="tab-btn active" id="tab-date"    onclick="switchMainTab('date')">📅 Date</button>
+        <button class="tab-btn"        id="tab-student" onclick="switchMainTab('student')">👤 Student</button>
+    </div>
+</div>
+
+<!-- BY DATE PANEL -->
+<div id="panel-date">
+    <div class="card">
+        <h2 class="card-title">Select a Date</h2>
+        <p style="font-size:0.88rem;color:#888;margin-bottom:1.2rem;">Click any date to see attendance across all three modes.</p>
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;">
+            <button class="btn btn-outline" style="padding:0.4rem 0.8rem;" onclick="changeMonth(-1)">‹</button>
+            <span id="month-label" style="font-size:1.1rem;font-weight:700;min-width:160px;text-align:center;"></span>
+            <button class="btn btn-outline" style="padding:0.4rem 0.8rem;" onclick="changeMonth(1)">›</button>
+        </div>
+        <div class="cal-grid-header">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="cal-grid" id="date-cal-grid"></div>
+    </div>
+
+    <div class="card" id="date-detail-card" style="display:none;">
+        <div class="card-toolbar">
+            <h2 class="card-title" id="date-detail-title">Attendance for —</h2>
+        </div>
+        <div style="display:flex;gap:0.6rem;margin-bottom:1.2rem;">
+            <button class="mode-tab-btn active" id="mdt-lecture" onclick="switchModeTab('lecture')">🏫 Lecture</button>
+            <button class="mode-tab-btn"        id="mdt-demo"    onclick="switchModeTab('demo')">⚡ Demo</button>
+            <button class="mode-tab-btn"        id="mdt-upload"  onclick="switchModeTab('upload')">📤 Upload</button>
+        </div>
+        <div id="date-detail-content"><p style="color:#aaa;text-align:center;padding:2rem;">Loading...</p></div>
+    </div>
+</div>
+
+<!-- BY STUDENT PANEL -->
+<div id="panel-student" style="display:none;">
+    <div class="card">
+        <h2 class="card-title">Select Student</h2>
+        <div style="display:flex;gap:1rem;align-items:center;flex-wrap:wrap;">
+            <select class="select-input" style="max-width:300px;" id="student-select" onchange="loadStudentCalendar()">
+                <option value="">— Select a student —</option>
+                {% for s in students %}
+                <option value="{{ s.student_id }}">{{ s.name }} (ID: {{ s.student_id }})</option>
+                {% endfor %}
+            </select>
+            <div style="display:flex;gap:0.5rem;">
+                <button class="mode-tab-btn active" id="smt-lecture" onclick="switchStudentMode('lecture')">🏫 Lecture</button>
+                <button class="mode-tab-btn"        id="smt-demo"    onclick="switchStudentMode('demo')">⚡ Demo</button>
+                <button class="mode-tab-btn"        id="smt-upload"  onclick="switchStudentMode('upload')">📤 Upload</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card" id="student-cal-card" style="display:none;">
+        <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;">
+            <button class="btn btn-outline" style="padding:0.4rem 0.8rem;" onclick="changeStudentMonth(-1)">‹</button>
+            <span id="student-month-label" style="font-size:1.1rem;font-weight:700;min-width:160px;text-align:center;"></span>
+            <button class="btn btn-outline" style="padding:0.4rem 0.8rem;" onclick="changeStudentMonth(1)">›</button>
+        </div>
+        <div style="display:flex;gap:1.5rem;margin-bottom:1rem;font-size:0.82rem;">
+            <span><span class="cal-dot present"></span> Present</span>
+            <span><span class="cal-dot absent"></span> Absent</span>
+            <span><span class="cal-dot no-session"></span> No session</span>
+        </div>
+        <div class="cal-grid-header">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+        </div>
+        <div class="cal-grid" id="student-cal-grid"></div>
+        <div id="student-stats-strip" style="display:flex;gap:2rem;margin-top:1.5rem;padding-top:1rem;border-top:1px solid #f0f2f5;"></div>
+    </div>
+
+    <div class="card" id="student-detail-card" style="display:none;">
+        <h2 class="card-title" id="student-detail-title">Sessions on —</h2>
+        <div id="student-detail-content"></div>
+    </div>
+</div>
+
+<style>
+.tab-btn,.mode-tab-btn{padding:.5rem 1.2rem;border:2px solid #e8ecf0;border-radius:8px;background:#fff;color:#666;font-size:.88rem;font-weight:600;cursor:pointer;transition:all .2s;}
+.tab-btn:hover,.mode-tab-btn:hover{border-color:#4f8ef7;color:#4f8ef7;}
+.tab-btn.active,.mode-tab-btn.active{background:#1a1a2e;border-color:#1a1a2e;color:#fff;}
+.cal-grid-header{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px;text-align:center;font-size:.78rem;font-weight:700;color:#888;text-transform:uppercase;}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
+.cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;border-radius:8px;font-size:.9rem;font-weight:500;cursor:pointer;border:2px solid transparent;transition:all .15s;}
+.cal-day:hover{border-color:#4f8ef7;transform:scale(1.05);}
+.cal-day.empty,.cal-day.no-session,.cal-day.no-data{cursor:default;}
+.cal-day.empty:hover,.cal-day.no-session:hover,.cal-day.no-data:hover{border-color:transparent;transform:none;}
+.cal-day.today{border-color:#4f8ef7!important;font-weight:800;}
+.cal-day.selected{border-color:#1a1a2e!important;background:#1a1a2e;color:#fff;}
+.cal-day.has-data{background:#e8f4fd;color:#1a1a2e;}
+.cal-day.no-data{background:#f5f7fa;color:#bbb;}
+.cal-day.present{background:#d4edda;color:#155724;}
+.cal-day.absent{background:#f8d7da;color:#721c24;}
+.cal-day.no-session{background:#f5f7fa;color:#ccc;}
+.cal-dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:4px;vertical-align:middle;}
+.cal-dot.present{background:#27ae60;}.cal-dot.absent{background:#e74c3c;}.cal-dot.no-session{background:#ddd;}
+.detail-table{width:100%;border-collapse:collapse;font-size:.9rem;margin-top:.5rem;}
+.detail-table th{background:#f5f7fa;padding:.6rem 1rem;text-align:left;font-size:.8rem;color:#555;text-transform:uppercase;letter-spacing:.5px;}
+.detail-table td{padding:.6rem 1rem;border-bottom:1px solid #f0f2f5;}
+.detail-table tr:last-child td{border-bottom:none;}
+.stat-chip{text-align:center;}
+.stat-chip .num{font-size:1.6rem;font-weight:700;}
+.stat-chip .lbl{font-size:.75rem;color:#888;text-transform:uppercase;letter-spacing:.5px;margin-top:.2rem;}
+</style>
+
+<script>
+const today       = new Date();
+let dateViewMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+let studentMonth  = new Date(today.getFullYear(), today.getMonth(), 1);
+let selectedDateMode    = 'lecture';
+let selectedStudentMode = 'lecture';
+let studentCalData      = {};
+const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+
+function switchMainTab(tab) {
+    document.getElementById('panel-date').style.display    = tab==='date'    ? 'block':'none';
+    document.getElementById('panel-student').style.display = tab==='student' ? 'block':'none';
+    document.getElementById('tab-date').classList.toggle('active',    tab==='date');
+    document.getElementById('tab-student').classList.toggle('active', tab==='student');
+}
+
+// DATE VIEW
+function changeMonth(dir) {
+    dateViewMonth = new Date(dateViewMonth.getFullYear(), dateViewMonth.getMonth()+dir, 1);
+    renderDateCalendar();
+}
+
+function renderDateCalendar() {
+    const grid=document.getElementById('date-cal-grid');
+    const year=dateViewMonth.getFullYear(), month=dateViewMonth.getMonth();
+    document.getElementById('month-label').textContent=`${MONTHS[month]} ${year}`;
+    grid.innerHTML='';
+    const firstDay=new Date(year,month,1).getDay();
+    const days=new Date(year,month+1,0).getDate();
+    for(let i=0;i<firstDay;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+    for(let d=1;d<=days;d++){
+        const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const el=document.createElement('div');
+        el.textContent=d; el.className='cal-day has-data';
+        if(d===today.getDate()&&month===today.getMonth()&&year===today.getFullYear()) el.classList.add('today');
+        el.onclick=()=>loadDateDetail(ds,el);
+        grid.appendChild(el);
+    }
+}
+
+function loadDateDetail(dateStr, el) {
+    document.querySelectorAll('#date-cal-grid .cal-day').forEach(d=>d.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('date-detail-card').style.display='block';
+    document.getElementById('date-detail-title').textContent=`Attendance for ${dateStr}`;
+    document.getElementById('date-detail-content').innerHTML='<p style="color:#aaa;text-align:center;padding:2rem;">Loading...</p>';
+    fetch(`/api/attendance/by_date/${dateStr}`)
+        .then(r=>r.json())
+        .then(data=>{window._dateData=data; renderDateModeTable(selectedDateMode);});
+}
+
+function switchModeTab(mode) {
+    selectedDateMode=mode;
+    ['lecture','demo','upload'].forEach(m=>document.getElementById(`mdt-${m}`).classList.toggle('active',m===mode));
+    if(window._dateData) renderDateModeTable(mode);
+}
+
+function renderDateModeTable(mode) {
+    const rows=window._dateData[mode]||[];
+    const el=document.getElementById('date-detail-content');
+    if(rows.length===0){el.innerHTML=`<p style="color:#bbb;text-align:center;padding:2rem;">No ${mode} sessions on this date.</p>`;return;}
+    const sessions={};
+    rows.forEach(r=>{const k=`${r.subject||mode} @ ${r.start_time}`;if(!sessions[k])sessions[k]=[];sessions[k].push(r);});
+    let html='';
+    for(const [lbl,recs] of Object.entries(sessions)){
+        const pres=recs.filter(r=>r.status==='Present').length;
+        html+=`<div style="margin-bottom:1.5rem;"><div style="font-weight:700;font-size:.95rem;color:#1a1a2e;margin-bottom:.6rem;">${lbl} <span style="font-size:.8rem;color:#888;font-weight:400;">${pres}/${recs.length} present</span></div>
+        <table class="detail-table"><thead><tr><th>Student ID</th><th>Photos</th><th>Status</th></tr></thead><tbody>`;
+        recs.forEach(r=>{
+            const b=r.status==='Present'?'<span class="badge badge-present">✓ Present</span>':'<span class="badge badge-absent">✗ Absent</span>';
+            html+=`<tr><td>${r.student_id}</td><td>${r.photos_detected}</td><td>${b}</td></tr>`;
+        });
+        html+=`</tbody></table></div>`;
+    }
+    el.innerHTML=html;
+}
+
+// STUDENT VIEW
+function switchStudentMode(mode) {
+    selectedStudentMode=mode;
+    ['lecture','demo','upload'].forEach(m=>document.getElementById(`smt-${m}`).classList.toggle('active',m===mode));
+    const sid=document.getElementById('student-select').value;
+    if(sid) loadStudentCalendar();
+}
+
+function changeStudentMonth(dir) {
+    studentMonth=new Date(studentMonth.getFullYear(), studentMonth.getMonth()+dir, 1);
+    renderStudentCalendar();
+}
+
+function loadStudentCalendar() {
+    const sid=document.getElementById('student-select').value;
+    if(!sid) return;
+    document.getElementById('student-cal-card').style.display='block';
+    document.getElementById('student-detail-card').style.display='none';
+    document.getElementById('student-cal-grid').innerHTML='<div style="grid-column:span 7;color:#aaa;padding:1rem;text-align:center;">Loading...</div>';
+    fetch(`/api/attendance/calendar/${selectedStudentMode}/${sid}`)
+        .then(r=>r.json())
+        .then(data=>{studentCalData=data; renderStudentCalendar(); renderStudentStats();});
+}
+
+function renderStudentCalendar() {
+    const grid=document.getElementById('student-cal-grid');
+    const year=studentMonth.getFullYear(), month=studentMonth.getMonth();
+    document.getElementById('student-month-label').textContent=`${MONTHS[month]} ${year}`;
+    grid.innerHTML='';
+    const firstDay=new Date(year,month,1).getDay();
+    const days=new Date(year,month+1,0).getDate();
+    for(let i=0;i<firstDay;i++){const e=document.createElement('div');e.className='cal-day empty';grid.appendChild(e);}
+    for(let d=1;d<=days;d++){
+        const ds=`${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+        const el=document.createElement('div');
+        el.textContent=d;
+        if(ds in studentCalData){
+            const st=studentCalData[ds];
+            el.className=`cal-day ${st==='Present'?'present':'absent'}`;
+            el.title=`${ds}: ${st}`;
+            el.onclick=()=>loadStudentDateDetail(ds,el);
+        } else {
+            el.className='cal-day no-session';
+        }
+        if(d===today.getDate()&&month===today.getMonth()&&year===today.getFullYear()) el.classList.add('today');
+        grid.appendChild(el);
+    }
+}
+
+function renderStudentStats() {
+    const strip=document.getElementById('student-stats-strip');
+    const vals=Object.values(studentCalData);
+    const total=vals.length, present=vals.filter(s=>s==='Present').length;
+    const pct=total>0?Math.round((present/total)*100):0;
+    const color=pct>=75?'#27ae60':pct>=50?'#e67e22':'#e74c3c';
+    strip.innerHTML=`
+        <div class="stat-chip"><div class="num" style="color:#27ae60">${present}</div><div class="lbl">Present</div></div>
+        <div class="stat-chip"><div class="num" style="color:#e74c3c">${total-present}</div><div class="lbl">Absent</div></div>
+        <div class="stat-chip"><div class="num">${total}</div><div class="lbl">Sessions</div></div>
+        <div class="stat-chip"><div class="num" style="color:${color}">${pct}%</div><div class="lbl">Attendance</div></div>`;
+}
+
+function loadStudentDateDetail(dateStr, el) {
+    document.querySelectorAll('#student-cal-grid .cal-day').forEach(d=>d.classList.remove('selected'));
+    el.classList.add('selected');
+    const sid=document.getElementById('student-select').value;
+    const card=document.getElementById('student-detail-card');
+    card.style.display='block';
+    document.getElementById('student-detail-title').textContent=`Sessions on ${dateStr} — ${selectedStudentMode}`;
+    document.getElementById('student-detail-content').innerHTML='<p style="color:#aaa;text-align:center;padding:1rem;">Loading...</p>';
+    fetch(`/api/attendance/detail/${selectedStudentMode}/${sid}/${dateStr}`)
+        .then(r=>r.json())
+        .then(rows=>{
+            if(rows.length===0){document.getElementById('student-detail-content').innerHTML='<p style="color:#bbb;text-align:center;padding:1rem;">No records found.</p>';return;}
+            let html='<table class="detail-table"><thead><tr><th>Subject</th><th>Time</th><th>Photos</th><th>Status</th></tr></thead><tbody>';
+            rows.forEach(r=>{
+                const b=r.status==='Present'?'<span class="badge badge-present">✓ Present</span>':'<span class="badge badge-absent">✗ Absent</span>';
+                html+=`<tr><td>${r.subject||'—'}</td><td>${r.start_time}</td><td>${r.photos_detected}/${r.total_photos}</td><td>${b}</td></tr>`;
+            });
+            html+='</tbody></table>';
+            document.getElementById('student-detail-content').innerHTML=html;
+            card.scrollIntoView({behavior:'smooth'});
+        });
+}
+
+renderDateCalendar();
+</script>
+
+{% endblock %}

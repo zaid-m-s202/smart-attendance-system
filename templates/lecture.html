@@ -2,26 +2,55 @@
 {% block content %}
 
 <div class="page-header">
-    <h1>Lecture Attendance</h1>
+    {% if mode == 'demo' %}
+        <h1>⚡ Demo Sessions</h1>
+        <p>All attendance sessions recorded via Demo Mode — saved in demo.db</p>
+    {% else %}
+        <h1>📤 Upload Sessions</h1>
+        <p>All attendance sessions recorded via Photo Upload — saved in upload.db</p>
+    {% endif %}
 </div>
 
+<!-- Mode switcher -->
+<div class="card" style="padding: 1rem 1.5rem;">
+    <div style="display:flex; gap:0.8rem; align-items:center;">
+        <span style="font-size:0.85rem; color:#888; font-weight:600;">VIEW MODE:</span>
+        <a href="/sessions/demo"
+           class="btn {{ 'btn-primary' if mode == 'demo' else 'btn-outline' }}"
+           style="padding:0.4rem 1rem; font-size:0.88rem;">
+            ⚡ Demo
+        </a>
+        <a href="/sessions/upload"
+           class="btn {{ 'btn-primary' if mode == 'upload' else 'btn-outline' }}"
+           style="padding:0.4rem 1rem; font-size:0.88rem;">
+            📤 Upload
+        </a>
+    </div>
+</div>
+
+{% if sessions %}
+
+<!-- Session selector -->
 <div class="card">
-    <h2 class="card-title">Select Lecture</h2>
+    <h2 class="card-title">Select Session</h2>
     <div class="select-row">
-        <select class="select-input" onchange="window.location='/lecture/'+this.value">
-            <option value="">— Select a lecture —</option>
-            {% for lec in lectures %}
-            <option value="{{ lec.id }}"
-                {{ 'selected' if selected and selected.id == lec.id }}>
-                {{ lec.subject }} — {{ lec.date }} {{ lec.start_time }}
+        <select class="select-input"
+                onchange="window.location='/session/{{ mode }}/'+this.value">
+            <option value="">— Select a session —</option>
+            {% for s in sessions %}
+            <option value="{{ s.id }}"
+                {{ 'selected' if selected and selected.id == s.id }}>
+                {{ s.date }} at {{ s.start_time }}
+                {% if s.status == 'ongoing' %} (ongoing){% endif %}
             </option>
             {% endfor %}
         </select>
     </div>
 </div>
 
-{% if selected and records %}
-<!-- Summary -->
+{% if selected and records is defined %}
+
+<!-- Summary stats -->
 <div class="card-row">
     <div class="card stat-card">
         <div class="stat-number text-present">{{ present_count }}</div>
@@ -45,17 +74,20 @@
     </div>
 </div>
 
+<!-- Attendance table -->
 <div class="card">
     <div class="card-toolbar">
-        <h2 class="card-title">{{ selected.subject }} — {{ selected.date }}</h2>
-        <a href="/export/lecture/{{ selected.id }}" class="btn btn-outline">⬇ Export CSV</a>
+        <h2 class="card-title">
+            Session on {{ selected.date }} at {{ selected.start_time }}
+        </h2>
+        <a href="/export/session/{{ mode }}/{{ selected.id }}"
+           class="btn btn-outline">⬇ Export CSV</a>
     </div>
 
     <table class="table">
         <thead>
             <tr>
                 <th>Student ID</th>
-                <th>Name</th>
                 <th>Photos Detected</th>
                 <th>Status</th>
             </tr>
@@ -64,8 +96,7 @@
             {% for r in records %}
             <tr>
                 <td>{{ r.student_id }}</td>
-                <td>{{ r.name }}</td>
-                <td>{{ r.photos_detected }} / 5</td>
+                <td>{{ r.photos_detected }} / {{ selected.total_photos }}</td>
                 <td>
                     {% if r.status == 'Present' %}
                         <span class="badge badge-present">✓ Present</span>
@@ -78,6 +109,33 @@
         </tbody>
     </table>
 </div>
+
+{% endif %}
+
+{% else %}
+
+<!-- Empty state — no sessions yet -->
+<div class="card" style="text-align:center; padding:3rem;">
+    <div style="font-size:3rem; margin-bottom:1rem;">
+        {{ '⚡' if mode == 'demo' else '📤' }}
+    </div>
+    <p style="font-size:1rem; color:#888; font-weight:600;">
+        No {{ mode }} sessions recorded yet.
+    </p>
+    <p style="font-size:0.88rem; color:#bbb; margin-top:0.3rem; margin-bottom:1.5rem;">
+        {% if mode == 'demo' %}
+            Run a Demo Mode session from the Dashboard to see records here.
+        {% else %}
+            Upload photos from the Upload page to see records here.
+        {% endif %}
+    </p>
+    {% if mode == 'demo' %}
+        <a href="/" class="btn btn-primary">Go to Dashboard</a>
+    {% else %}
+        <a href="/upload" class="btn btn-secondary">Go to Upload</a>
+    {% endif %}
+</div>
+
 {% endif %}
 
 {% endblock %}

@@ -6,32 +6,21 @@
     <p class="date-display" id="live-clock"></p>
 </div>
 
-<!-- Alert Banner -->
-{% if alert %}
-<div class="alert alert-warning">
-    ⚠️ {{ alert }}
-</div>
-{% endif %}
+{% if alert %}<div class="alert alert-warning">⚠️ {{ alert }}</div>{% endif %}
 
-<!-- Current Lecture Status -->
 <div class="card-row">
     <div class="card status-card">
         <div class="card-label">Current Status</div>
         {% if current_lecture %}
             <div class="status-active">🟢 {{ current_lecture.subject }}</div>
-            <div class="status-time">
-                {{ format_time(current_lecture.start) }} → {{ format_time(current_lecture.end) }}
-            </div>
+            <div class="status-time">{{ format_time(current_lecture.start) }} → {{ format_time(current_lecture.end) }}</div>
         {% elif current_break %}
             <div class="status-break">☕ {{ current_break.name }}</div>
-            <div class="status-time">
-                Until {{ format_time(current_break.end) }}
-            </div>
+            <div class="status-time">Until {{ format_time(current_break.end) }}</div>
         {% else %}
             <div class="status-idle">⏸ No Active Lecture</div>
         {% endif %}
     </div>
-
     <div class="card status-card">
         <div class="card-label">Next Lecture</div>
         {% if next_lecture %}
@@ -41,7 +30,6 @@
             <div class="status-idle">No more lectures today</div>
         {% endif %}
     </div>
-
     <div class="card status-card">
         <div class="card-label">Today's Summary</div>
         <div class="summary-row">
@@ -52,79 +40,61 @@
     </div>
 </div>
 
-<!-- Action Buttons -->
 <div class="card">
     <h2 class="card-title">Take Attendance</h2>
+    <div style="display:grid; grid-template-columns:1fr 1fr 1fr; gap:1.5rem;">
 
-    <div class="button-row">
-
-        <!-- Real Lecture Mode -->
-        <div class="action-card">
+        <div class="action-card" style="border-top:4px solid #e67e22;">
             <div class="action-icon">🏫</div>
-            <h3>Real Lecture Mode</h3>
-            <p>Automatically takes 5 photos spread across the current 55-minute lecture. Marks Present if detected in 3 or more photos.</p>
-            <button id="btn-lecture" class="btn btn-primary" onclick="startLecture()">
-                Start Lecture Mode
-            </button>
+            <h3>Lecture Mode</h3>
+            <p>5 photos over 55 minutes. Auto-detects subject from schedule. Saves to <strong>lecture.db</strong>.</p>
+            <button id="btn-lecture" class="btn btn-primary" onclick="startLecture()">Start Lecture Mode</button>
             {% if not current_lecture %}
-            <p class="btn-note">⚠️ No active lecture right now</p>
+                <p class="btn-note">⚠️ No active lecture right now</p>
+            {% else %}
+                <p style="font-size:0.82rem;color:#27ae60;margin-top:0.5rem;">✓ Active: {{ current_lecture.subject }}</p>
             {% endif %}
         </div>
 
-        <!-- Demo Mode -->
-        <div class="action-card">
+        <div class="action-card" style="border-top:4px solid #4f8ef7;">
             <div class="action-icon">⚡</div>
             <h3>Demo Mode</h3>
-            <p>Takes 5 photos in 20 seconds (one every 4 seconds). Marks Present if detected in 3 or more photos. For live demonstrations.</p>
-            <button id="btn-demo" class="btn btn-secondary" onclick="startDemo()">
-                Start Demo Mode
-            </button>
+            <p>5 photos in 20 seconds. Detected in 3+ photos = Present. Saves to <strong>demo.db</strong>.</p>
+            <button id="btn-demo" class="btn btn-secondary" onclick="startDemo()">Start Demo Mode</button>
+        </div>
+
+        <div class="action-card" style="border-top:4px solid #27ae60;">
+            <div class="action-icon">📤</div>
+            <h3>Upload Photos</h3>
+            <p>Upload up to 5 photos from your phone. Detected in 3+ = Present. Saves to <strong>upload.db</strong>.</p>
+            <a href="/upload" class="btn btn-outline">Go to Upload Page</a>
         </div>
 
     </div>
 </div>
 
-<!-- Live Session Log -->
 <div class="card" id="session-log-card" style="display:none;">
-    <h2 class="card-title">
-        Session Log
-        <span class="spinner" id="spinner">⟳</span>
-    </h2>
-    <div class="progress-bar-wrapper">
-        <div class="progress-bar" id="progress-bar"></div>
-    </div>
+    <h2 class="card-title">Session Log <span class="spinner" id="spinner">⟳</span></h2>
+    <div class="progress-bar-wrapper"><div class="progress-bar" id="progress-bar"></div></div>
     <p id="progress-text" class="progress-text">Photo 0 of 5</p>
     <div class="log-box" id="log-box"></div>
 </div>
 
-<!-- Full Schedule -->
 <div class="card">
     <h2 class="card-title">Today's Schedule</h2>
     <table class="table">
-        <thead>
-            <tr>
-                <th>#</th>
-                <th>Subject</th>
-                <th>Start</th>
-                <th>End</th>
-                <th>Status</th>
-            </tr>
-        </thead>
+        <thead><tr><th>#</th><th>Subject</th><th>Start</th><th>End</th><th>Status</th></tr></thead>
         <tbody>
             {% for lec in full_schedule %}
             <tr class="row-{{ lec.status }}">
                 <td>{{ lec.id }}</td>
-                <td>{{ lec.subject }}</td>
+                <td><strong>{{ lec.subject }}</strong></td>
                 <td>{{ lec.start_str }}</td>
                 <td>{{ lec.end_str }}</td>
                 <td>
-                    {% if lec.status == 'ongoing' %}
-                        <span class="badge badge-ongoing">● Ongoing</span>
-                    {% elif lec.status == 'completed' %}
-                        <span class="badge badge-done">✓ Completed</span>
-                    {% else %}
-                        <span class="badge badge-upcoming">○ Upcoming</span>
-                    {% endif %}
+                    {% if lec.status == 'ongoing' %}<span class="badge badge-ongoing">● Ongoing</span>
+                    {% elif lec.status == 'completed' %}<span class="badge badge-done">✓ Completed</span>
+                    {% else %}<span class="badge badge-upcoming">○ Upcoming</span>{% endif %}
                 </td>
             </tr>
             {% endfor %}

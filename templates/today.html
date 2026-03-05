@@ -3,49 +3,41 @@
 
 <div class="page-header">
     <h1>Today's Attendance</h1>
-    <p>{{ date }}</p>
+    <p>{{ date }} — Each mode is tracked independently</p>
 </div>
 
-<!-- Summary -->
 <div class="card-row">
-    <div class="card stat-card">
-        <div class="stat-number text-present">{{ present_count }}</div>
-        <div class="stat-label">Present</div>
+    <div class="card stat-card" style="border-top:4px solid #1a1a2e;">
+        <div class="stat-number text-present">{{ lecture_present_count }}</div>
+        <div class="stat-label">Present (Lecture)</div>
     </div>
-    <div class="card stat-card">
-        <div class="stat-number text-absent">{{ absent_count }}</div>
-        <div class="stat-label">Absent</div>
+    <div class="card stat-card" style="border-top:4px solid #4f8ef7;">
+        <div class="stat-number text-present">{{ demo_present_count }}</div>
+        <div class="stat-label">Present (Demo)</div>
+    </div>
+    <div class="card stat-card" style="border-top:4px solid #27ae60;">
+        <div class="stat-number text-present">{{ upload_present_count }}</div>
+        <div class="stat-label">Present (Upload)</div>
     </div>
     <div class="card stat-card">
         <div class="stat-number">{{ total_count }}</div>
         <div class="stat-label">Total Students</div>
     </div>
     <div class="card stat-card">
-        <div class="stat-number text-present">
-            {% if total_count > 0 %}
-                {{ ((present_count / total_count) * 100) | round(1) }}%
-            {% else %}
-                0%
-            {% endif %}
-        </div>
-        <div class="stat-label">Attendance Rate</div>
+        <a href="/export/today" class="btn btn-outline" style="margin-top:0.5rem;">⬇ Export CSV</a>
     </div>
 </div>
 
-<!-- Export Button -->
 <div class="card">
-    <div class="card-toolbar">
-        <h2 class="card-title">Attendance Records</h2>
-        <a href="/export/today" class="btn btn-outline">⬇ Export CSV</a>
-    </div>
-
+    <h2 class="card-title">Today's Records</h2>
     <table class="table">
         <thead>
             <tr>
                 <th>Student ID</th>
                 <th>Name</th>
-                <th>Status</th>
-                <th>Time Marked</th>
+                <th>🏫 Lecture</th>
+                <th>⚡ Demo</th>
+                <th>📤 Upload</th>
             </tr>
         </thead>
         <tbody>
@@ -54,13 +46,26 @@
                 <td>{{ r.student_id }}</td>
                 <td>{{ r.name }}</td>
                 <td>
-                    {% if r.status == 'Present' %}
+                    {% if r.lecture_status == 'Present' %}
                         <span class="badge badge-present">✓ Present</span>
                     {% else %}
                         <span class="badge badge-absent">✗ Absent</span>
                     {% endif %}
                 </td>
-                <td>{{ r.time if r.time else '—' }}</td>
+                <td>
+                    {% if r.demo_status == 'Present' %}
+                        <span class="badge badge-present">✓ Present</span>
+                    {% else %}
+                        <span class="badge badge-absent">✗ Absent</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if r.upload_status == 'Present' %}
+                        <span class="badge badge-present">✓ Present</span>
+                    {% else %}
+                        <span class="badge badge-absent">✗ Absent</span>
+                    {% endif %}
+                </td>
             </tr>
             {% endfor %}
         </tbody>

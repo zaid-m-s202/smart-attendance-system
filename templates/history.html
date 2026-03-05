@@ -1,0 +1,258 @@
+{% extends "base.html" %}
+
+{% block title %}Attendance History — Smart Attend{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+
+  <!-- Page Header -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h2 class="mb-1">
+        <i class="bi bi-calendar3 me-2"></i>Attendance History
+      </h2>
+      <p class="text-muted mb-0">View and filter past attendance records by date or student</p>
+    </div>
+    <a href="/" class="btn btn-outline-secondary btn-sm">
+      <i class="bi bi-arrow-left me-1"></i>Dashboard
+    </a>
+  </div>
+
+  <!-- Filter Card -->
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <form method="GET" action="/history" class="row g-3 align-items-end">
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">
+            <i class="bi bi-calendar-date me-1"></i>Date
+          </label>
+          <input
+            type="date"
+            name="date"
+            class="form-control"
+            value="{{ selected_date }}"
+            max="{{ today }}"
+          >
+        </div>
+        <div class="col-md-4">
+          <label class="form-label fw-semibold">
+            <i class="bi bi-person me-1"></i>Student
+            <span class="text-muted fw-normal">(optional)</span>
+          </label>
+          <select name="student" class="form-select">
+            <option value="">— All Students —</option>
+            {% for s in students %}
+              <option value="{{ s[0] }}"
+                {% if selected_student == s[0]|string %}selected{% endif %}>
+                {{ s[1] }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="col-md-4 d-flex gap-2">
+          <button type="submit" class="btn btn-primary flex-grow-1">
+            <i class="bi bi-search me-1"></i>View Records
+          </button>
+          {% if selected_date %}
+          <a href="/history" class="btn btn-outline-secondary" title="Clear filters">
+            <i class="bi bi-x-lg"></i>
+          </a>
+          {% endif %}
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Recent date quick-select pills -->
+  {% if dates %}
+  <div class="mb-4 d-flex flex-wrap align-items-center gap-2">
+    <small class="text-muted fw-semibold text-uppercase me-1"
+           style="letter-spacing:.05em; font-size:.7rem;">Recent:</small>
+    {% for d in dates[:7] %}
+      <a
+        href="/history?date={{ d }}{% if selected_student %}&student={{ selected_student }}{% endif %}"
+        class="badge rounded-pill text-decoration-none
+          {% if d == selected_date %}bg-primary{% else %}bg-light text-dark border{% endif %}"
+        style="font-size:.8rem; padding:.35rem .75rem;"
+      >{{ d }}</a>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <!-- ── Results ─────────────────────────────────────────────────── -->
+  {% if selected_date %}
+
+    {% if records %}
+
+      {# Compute summary stats #}
+      {% set ns = namespace(present=0, absent=0) %}
+      {% for r in records %}
+        {% if r[2]|lower == 'present' %}{% set ns.present = ns.present + 1 %}
+        {% else %}{% set ns.absent = ns.absent + 1 %}{% endif %}
+      {% endfor %}
+      {% set total = ns.present + ns.absent %}
+      {% set pct   = ((ns.present / total) * 100)|round(1) if total > 0 else 0 %}
+
+      <!-- Stats Row -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+          <div class="card shadow-sm text-center h-100">
+            <div class="card-body py-3">
+              <div class="fs-2 fw-bold text-primary">{{ total }}</div>
+              <div class="small text-muted text-uppercase" style="letter-spacing:.05em;">Total Records</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card shadow-sm text-center h-100">
+            <div class="card-body py-3">
+              <div class="fs-2 fw-bold text-success">{{ ns.present }}</div>
+              <div class="small text-muted text-uppercase" style="letter-spacing:.05em;">Present</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card shadow-sm text-center h-100">
+            <div class="card-body py-3">
+              <div class="fs-2 fw-bold text-danger">{{ ns.absent }}</div>
+              <div class="small text-muted text-uppercase" style="letter-spacing:.05em;">Absent</div>
+            </div>
+          </div>
+        </div>
+        <div class="col-6 col-md-3">
+          <div class="card shadow-sm text-center h-100">
+            <div class="card-body py-3">
+              <div class="fs-2 fw-bold">{{ pct }}%</div>
+              <div class="small text-muted text-uppercase" style="letter-spacing:.05em;">Attendance Rate</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress Bar -->
+      <div class="card shadow-sm mb-4">
+        <div class="card-body py-3">
+          <div class="d-flex justify-content-between mb-2">
+            <small class="fw-semibold">
+              Overall Attendance &mdash; {{ selected_date }}
+            </small>
+            <small class="text-muted">{{ ns.present }} / {{ total }} present</small>
+          </div>
+<div class="progress" style="height:10px; border-radius:50px;">
+  <div
+    class="progress-bar {% if pct >= 75 %}bg-success{% elif pct >= 50 %}bg-warning{% else %}bg-danger{% endif %}"
+    role="progressbar"
+    style="width:{{ pct }}%; border-radius:50px; transition:width .6s ease;"
+    aria-valuenow="{{ pct }}"
+    aria-valuemin="0"
+    aria-valuemax="100">
+  </div>
+</div>
+        </div>
+      </div>
+
+      <!-- Records Table -->
+      <div class="card shadow-sm">
+        <div class="card-header d-flex justify-content-between align-items-center">
+          <span class="fw-semibold">
+            <i class="bi bi-table me-2"></i>Records for {{ selected_date }}
+          </span>
+          <span class="badge bg-secondary">
+            {{ records|length }} record{{ 's' if records|length != 1 else '' }}
+          </span>
+        </div>
+        <div class="table-responsive">
+          <table class="table table-hover align-middle mb-0">
+            <thead class="table-dark">
+              <tr>
+                <th style="width:40px;">#</th>
+                <th><i class="bi bi-person me-1"></i>Student</th>
+                <th><i class="bi bi-book me-1"></i>Lecture</th>
+                <th><i class="bi bi-check-circle me-1"></i>Status</th>
+                <th><i class="bi bi-clock me-1"></i>Marked At</th>
+                <th><i class="bi bi-bar-chart me-1"></i>Attendance %</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for r in records %}
+              <tr>
+                <td class="text-muted small">{{ loop.index }}</td>
+
+                <td class="fw-semibold">{{ r[0] }}</td>
+
+                <td>
+                  <span class="badge bg-dark rounded-pill">
+                    Lecture {{ r[1] if r[1] else '—' }}
+                  </span>
+                </td>
+
+                <td>
+                  {% if r[2]|lower == 'present' %}
+                    <span class="badge bg-success rounded-pill px-3 py-2">
+                      <i class="bi bi-check-lg me-1"></i>Present
+                    </span>
+                  {% else %}
+                    <span class="badge bg-danger rounded-pill px-3 py-2">
+                      <i class="bi bi-x-lg me-1"></i>Absent
+                    </span>
+                  {% endif %}
+                </td>
+
+                <td class="text-muted small font-monospace">
+                  {{ r[3] if r[3] else '—' }}
+                </td>
+
+                <!-- Attendance % column: computed per student across all dates -->
+                <td>
+                  {% if r[5] is defined and r[5] is not none %}
+                    <div class="d-flex align-items-center gap-2">
+                      <div class="progress flex-grow-1" style="height:6px; min-width:70px;">
+                        <div
+                          class="progress-bar
+                            {% if r[5] >= 75 %}bg-success
+                            {% elif r[5] >= 50 %}bg-warning
+                            {% else %}bg-danger{% endif %}"
+                          style="width:{{ r[5] }}%">
+                        </div>
+                      </div>
+                      <small class="text-muted">{{ r[5] }}%</small>
+                    </div>
+                  {% else %}
+                    <span class="text-muted small">—</span>
+                  {% endif %}
+                </td>
+
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div><!-- /card -->
+
+    {% else %}
+      <div class="card shadow-sm">
+        <div class="card-body text-center py-5">
+          <i class="bi bi-calendar-x display-4 text-muted d-block mb-3"></i>
+          <h5 class="fw-semibold">No Records Found</h5>
+          <p class="text-muted mb-0">
+            No attendance was recorded on <strong>{{ selected_date }}</strong>
+            {% if selected_student %} for the selected student{% endif %}.
+          </p>
+        </div>
+      </div>
+    {% endif %}
+
+  {% else %}
+    <div class="card shadow-sm">
+      <div class="card-body text-center py-5">
+        <i class="bi bi-calendar3 display-4 text-muted d-block mb-3"></i>
+        <h5 class="fw-semibold">Select a Date to Get Started</h5>
+        <p class="text-muted mb-0">
+          Pick a date from the filter above, or click one of the recent date chips.
+        </p>
+      </div>
+    </div>
+  {% endif %}
+
+</div>
+{% endblock %}
