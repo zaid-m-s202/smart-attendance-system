@@ -8,14 +8,14 @@ import config
 # ── College Schedule with real subject names ───────────────────
 LECTURES = [
     {"id": 1, "subject": "AIC", "start": time(10, 0),  "end": time(10, 55)},
-    {"id": 2, "subject": "SS",  "start": time(11, 0),  "end": time(11, 55)},
-    {"id": 3, "subject": "CS",  "start": time(12, 0),  "end": time(12, 45)},
+    {"id": 2, "subject": "SS",  "start": time(10, 55), "end": time(11, 50)},
+    {"id": 3, "subject": "CS",  "start": time(11, 50), "end": time(12, 45)},
     # Lunch Break: 12:45 → 13:40
     {"id": 4, "subject": "E&I", "start": time(13, 40), "end": time(14, 35)},
-    {"id": 5, "subject": "PME", "start": time(14, 40), "end": time(15, 30)},
+    {"id": 5, "subject": "PME", "start": time(14, 35), "end": time(15, 30)},
     # Short Break: 15:30 → 15:40
     {"id": 6, "subject": "DS",  "start": time(15, 40), "end": time(16, 35)},
-    {"id": 7, "subject": "PE",  "start": time(16, 40), "end": time(17, 30)},
+    {"id": 7, "subject": "PE",  "start": time(16, 35), "end": time(17, 30)},
 ]
 
 BREAKS = [

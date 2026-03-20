@@ -3,21 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Attendance System</title>
+    <title>{% block title %}Smart Attendance System{% endblock %}</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><text y='32' font-size='32'>🎓</text></svg>">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
     <nav class="navbar">
         <div class="nav-brand"><span class="nav-icon">🎓</span>Smart Attendance</div>
         <div class="nav-links">
-            <a href="/"                class="{{ 'active' if request.endpoint == 'index' }}">Dashboard</a>
-            <a href="/today"           class="{{ 'active' if request.endpoint == 'today' }}">Today</a>
-            <a href="/attendance"      class="{{ 'active' if request.endpoint == 'attendance' }}">Attendance</a>
+            <a href="/"                 class="{{ 'active' if request.endpoint == 'index' }}">Dashboard</a>
+            <a href="/today"            class="{{ 'active' if request.endpoint == 'today' }}">Today</a>
+            <a href="/attendance"       class="{{ 'active' if request.endpoint == 'attendance' }}">Attendance</a>
             <a href="/sessions/lecture" class="{{ 'active' if request.endpoint == 'sessions' and request.view_args.get('mode') == 'lecture' }}">Lecture</a>
-            <a href="/sessions/demo"   class="{{ 'active' if request.endpoint == 'sessions' and request.view_args.get('mode') == 'demo' }}">Demo</a>
-            <a href="/sessions/upload" class="{{ 'active' if request.endpoint == 'sessions' and request.view_args.get('mode') == 'upload' }}">Upload Sess.</a>
-            <a href="/students"        class="{{ 'active' if request.endpoint in ['students', 'student_detail'] }}">Students</a>
-            <a href="/upload"          class="{{ 'active' if request.endpoint == 'upload_page' }}">📤 Upload</a>
+            <a href="/sessions/demo"    class="{{ 'active' if request.endpoint == 'sessions' and request.view_args.get('mode') == 'demo' }}">Demo</a>
+            <a href="/sessions/upload"  class="{{ 'active' if request.endpoint == 'sessions' and request.view_args.get('mode') == 'upload' }}">Upload Sess.</a>
+            <a href="/students"         class="{{ 'active' if request.endpoint in ['students', 'student_detail'] }}">Students</a>
+            <a href="/upload"           class="{{ 'active' if request.endpoint == 'upload_page' }}">📤 Upload</a>
         </div>
     </nav>
     <main class="main-content">{% block content %}{% endblock %}</main>

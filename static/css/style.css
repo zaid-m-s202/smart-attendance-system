@@ -14,7 +14,7 @@ body {
 /* ── Navbar ───────────────────────────────────────────────── */
 .navbar {
     background: #1a1a2e;
-    padding: 0 2rem;
+    padding: 0 1.5rem;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -23,28 +23,45 @@ body {
     top: 0;
     z-index: 100;
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    overflow: hidden; /* prevent wrapping from breaking layout */
 }
 
 .nav-brand {
     color: #fff;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: 700;
     letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    margin-right: 1rem;
 }
 
-.nav-icon { margin-right: 0.5rem; }
+.nav-icon { margin-right: 0.4rem; }
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 0.2rem; /* use gap instead of margin-left for tighter control */
+    overflow: hidden;
+    flex-shrink: 1;
+    min-width: 0;
+}
 
 .nav-links a {
     color: #a0a8c0;
     text-decoration: none;
-    margin-left: 2rem;
-    font-size: 0.95rem;
-    transition: color 0.2s;
+    padding: 0.4rem 0.65rem;
+    font-size: 0.88rem;
+    border-radius: 6px;
+    transition: color 0.2s, background 0.2s;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 
 .nav-links a:hover,
 .nav-links a.active {
     color: #4f8ef7;
+    background: rgba(79, 142, 247, 0.1);
 }
 
 /* ── Layout ───────────────────────────────────────────────── */
@@ -85,7 +102,7 @@ body {
 
 .card-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    grid-template-columns: repeat(3, 1fr);
     gap: 1rem;
     margin-bottom: 1.5rem;
 }
@@ -113,6 +130,13 @@ body {
     letter-spacing: 1px;
     color: #888;
     margin-bottom: 0.5rem;
+}
+
+/* ── Action Cards Grid ────────────────────────────────────── */
+.action-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1.5rem;
 }
 
 /* ── Status Cards ─────────────────────────────────────────── */
@@ -172,7 +196,7 @@ body {
     letter-spacing: 0.5px;
 }
 
-/* ── Action Buttons ───────────────────────────────────────── */
+/* ── Action Cards ─────────────────────────────────────────── */
 .button-row {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -389,9 +413,21 @@ body {
 }
 
 /* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 1024px) {
+    .nav-links a {
+        padding: 0.4rem 0.5rem;
+        font-size: 0.82rem;
+    }
+}
+
 @media (max-width: 768px) {
-    .button-row { grid-template-columns: 1fr; }
-    .card-row   { grid-template-columns: 1fr 1fr; }
-    .main-content { padding: 1rem; }
-    .nav-links a  { margin-left: 1rem; font-size: 0.85rem; }
+    .button-row    { grid-template-columns: 1fr; }
+    .card-row      { grid-template-columns: 1fr 1fr; }
+    .action-grid   { grid-template-columns: 1fr; }
+    .main-content  { padding: 1rem; }
+    .nav-links a   { padding: 0.3rem 0.4rem; font-size: 0.78rem; }
+}
+
+@media (max-width: 480px) {
+    .card-row { grid-template-columns: 1fr; }
 }

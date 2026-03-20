@@ -1,9 +1,11 @@
 import cv2
 import os
 import sys
+import pickle
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
+
 
 def draw_face_box(frame, top, right, bottom, left, name, is_known):
     """
@@ -12,13 +14,8 @@ def draw_face_box(frame, top, right, bottom, left, name, is_known):
     """
     color = (0, 255, 0) if is_known else (0, 0, 255)
 
-    # Draw rectangle around face
     cv2.rectangle(frame, (left, top), (right, bottom), color, config.FRAME_THICKNESS)
-
-    # Draw filled rectangle for name label background
     cv2.rectangle(frame, (left, bottom - 30), (right, bottom), color, cv2.FILLED)
-
-    # Draw name text
     cv2.putText(
         frame,
         name,
@@ -28,15 +25,11 @@ def draw_face_box(frame, top, right, bottom, left, name, is_known):
         (255, 255, 255),
         1
     )
-
     return frame
 
 
 def draw_status_bar(frame, marked_today):
-    """
-    Draws a status bar at the top of the frame showing
-    how many students have been marked present.
-    """
+    """Draws a status bar at the top of the frame."""
     text = f"Marked Present Today: {len(marked_today)}"
     cv2.putText(
         frame,
@@ -53,10 +46,8 @@ def draw_status_bar(frame, marked_today):
 def load_encodings(encodings_path):
     """
     Loads face encodings from disk.
-    Returns None if file doesn't exist.
+    Returns None if file doesn't exist or is malformed.
     """
-    import pickle
-
     if not os.path.exists(encodings_path):
         print(f"[ERROR] Encodings file not found at: {encodings_path}")
         print("        Please run encode_faces.py first.")
@@ -64,6 +55,10 @@ def load_encodings(encodings_path):
 
     with open(encodings_path, "rb") as f:
         data = pickle.load(f)
+
+    if not all(k in data for k in ("encodings", "names", "ids")):
+        print("[ERROR] encodings.pkl is malformed — please re-run encode_faces.py")
+        return None
 
     print(f"[OK] Loaded {len(data['encodings'])} encoding(s) from disk")
     return data

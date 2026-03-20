@@ -1,8 +1,10 @@
+import pickle
 import face_recognition
 import cv2
 import numpy as np
 import os
 import sys
+import time
 from datetime import datetime
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -11,21 +13,14 @@ from src.utils import load_encodings
 from src.attendance import mark_attendance
 
 
-def scan_photo(image_path):
+def scan_photo(image_path, data):
     """Runs face recognition on a single photo and marks attendance."""
-
     print(f"\n[SCAN] Scanning photo: {os.path.basename(image_path)}")
-
-    # Load encodings
-    data = load_encodings(config.ENCODINGS_PATH)
-    if data is None:
-        return
 
     known_encodings = data["encodings"]
     known_names     = data["names"]
     known_ids       = data["ids"]
 
-    # Load image
     image = cv2.imread(image_path)
     if image is None:
         print(f"[ERROR] Could not read image: {image_path}")
@@ -33,7 +28,6 @@ def scan_photo(image_path):
 
     rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
-    # Detect faces
     print("[SCAN] Detecting faces...")
     locations = face_recognition.face_locations(rgb, model=config.MODEL)
     encodings = face_recognition.face_encodings(rgb, locations)
@@ -63,7 +57,7 @@ def scan_photo(image_path):
                 confidence = round((1 - best_dist) * 100, 1)
 
         if name != "Unknown":
-            success = mark_attendance(student_id, name)
+            success = mark_attendance(student_id, name, mode="upload")
             if success:
                 marked.append(f"{name} ({confidence}%)")
                 print(f"  [✓] Marked Present: {name} — {confidence}% confidence")
@@ -73,7 +67,6 @@ def scan_photo(image_path):
             unknown += 1
             print(f"  [?] Unknown face detected")
 
-    # ── Summary ────────────────────────────────────────────────
     print(f"\n[DONE] Scan complete")
     print(f"  Marked present : {len(marked)}")
     print(f"  Unknown faces  : {unknown}")
@@ -82,14 +75,10 @@ def scan_photo(image_path):
 
 
 def scan_upload_folder():
-    """
-    Scans all images inside the upload_scan folder.
-    Processes every image found then moves it to a processed subfolder.
-    """
+    """Scans all images inside upload_scan folder."""
     folder = config.UPLOAD_SCAN_FOLDER
     os.makedirs(folder, exist_ok=True)
 
-    # Find all images in folder
     valid_ext = (".jpg", ".jpeg", ".png")
     images = [
         f for f in os.listdir(folder)
@@ -101,18 +90,28 @@ def scan_upload_folder():
         print(f"[INFO] Place a photo inside the folder and run again")
         return
 
+    # ── Load encodings once outside the loop ───────────────────
+    data = load_encodings(config.ENCODINGS_PATH)
+    if data is None:
+        return
+
     print(f"\n[INFO] Found {len(images)} image(s) to scan")
 
-    # Create processed subfolder
     processed_folder = os.path.join(folder, "processed")
     os.makedirs(processed_folder, exist_ok=True)
 
     for image_file in images:
         image_path = os.path.join(folder, image_file)
-        scan_photo(image_path)
+        scan_photo(image_path, data)
 
-        # Move to processed folder after scanning
+        # ── Handle duplicate filenames on Windows ───────────────
         processed_path = os.path.join(processed_folder, image_file)
+        if os.path.exists(processed_path):
+            base, ext = os.path.splitext(image_file)
+            processed_path = os.path.join(
+                processed_folder, f"{base}_{int(time.time())}{ext}"
+            )
+
         os.rename(image_path, processed_path)
         print(f"[MOVED] {image_file} → upload_scan/processed/")
 

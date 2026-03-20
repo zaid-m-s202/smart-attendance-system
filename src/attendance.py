@@ -1,57 +1,49 @@
 import pandas as pd
 import os
 import sys
-from datetime import datetime, timedelta
 import time
 import threading
+from datetime import datetime, timedelta
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
 
-def get_today_log_path():
-    """Returns the path to today's shared attendance CSV file."""
+def get_today_log_path(mode="general"):
+    """Returns the path to today's attendance CSV file."""
     today    = datetime.now().strftime(config.DATE_FORMAT)
-    filename = f"attendance_{today}.csv"
+    filename = f"attendance_{mode}_{today}.csv"
     return os.path.join(config.ATTENDANCE_LOG_DIR, filename)
 
 
 def initialize_log(log_path):
     """Creates today's attendance CSV if it doesn't exist."""
     os.makedirs(config.ATTENDANCE_LOG_DIR, exist_ok=True)
-
     if not os.path.exists(log_path):
         df = pd.DataFrame(columns=["student_id", "name", "date", "time", "status", "mode"])
         df.to_csv(log_path, index=False)
-        print(f"[LOG] Created new attendance log: {log_path}")
 
 
-def already_marked(log_path, student_name, mode):
-    """
-    Returns True if a student was already marked present
-    in this mode today (checks both name and mode columns).
-    """
+def already_marked(log_path, student_id):
+    """Returns True if student_id was already marked present today."""
     if not os.path.exists(log_path):
         return False
-
     df = pd.read_csv(log_path)
     if df.empty:
         return False
+    return str(student_id) in df["student_id"].astype(str).values
 
-    return not df[(df["name"] == student_name) & (df["mode"] == mode)].empty
 
-
-def mark_attendance(student_id, student_name, mode="demo"):
+def mark_attendance(student_id, student_name, mode="general"):
     """
-    Marks a student present in today's shared CSV log.
-    Uses the mode column to keep demo and upload entries separate —
-    a student can be Present in demo but Absent in upload on the same day.
+    Marks a student present in today's log CSV.
+    Prevents duplicate entries per student per mode per day.
     """
-    log_path = get_today_log_path()
+    log_path = get_today_log_path(mode)
     initialize_log(log_path)
 
-    if already_marked(log_path, student_name, mode):
-        return False  # Already marked for this mode today
+    if already_marked(log_path, student_id):
+        return False
 
     now = datetime.now()
     new_record = pd.DataFrame([{
@@ -64,27 +56,20 @@ def mark_attendance(student_id, student_name, mode="demo"):
     }])
 
     new_record.to_csv(log_path, mode="a", header=False, index=False)
-    print(f"[ATTENDANCE:{mode}] Marked present: {student_name} at {now.strftime(config.TIME_FORMAT)}")
+    print(f"[ATTENDANCE] Marked present: {student_name} ({mode}) at {now.strftime(config.TIME_FORMAT)}")
     return True
 
 
-def get_today_present(mode=None):
-    """
-    Returns a set of student names marked present today.
-    If mode is given, filters to that mode only.
-    """
-    log_path = get_today_log_path()
+def get_today_present(mode="general"):
+    """Returns a set of student names marked present today for a given mode."""
+    log_path = get_today_log_path(mode)
     if not os.path.exists(log_path):
         return set()
-
-    df = pd.read_csv(log_path)
-    if df.empty:
+    try:
+        df = pd.read_csv(log_path)
+        return set(df[df["status"] == "Present"]["name"].tolist())
+    except Exception:
         return set()
-
-    if mode and "mode" in df.columns:
-        df = df[df["mode"] == mode]
-
-    return set(df["name"].values)
 
 
 def clean_old_csv_logs():
@@ -92,17 +77,15 @@ def clean_old_csv_logs():
     if not os.path.exists(config.ATTENDANCE_LOG_DIR):
         return
 
-    now     = datetime.now()
-    cutoff  = now - timedelta(hours=config.CSV_RETENTION_HOURS)
+    now    = datetime.now()
+    cutoff = now - timedelta(hours=config.CSV_RETENTION_HOURS)
     deleted = 0
 
     for filename in os.listdir(config.ATTENDANCE_LOG_DIR):
         if not filename.endswith(".csv"):
             continue
-
         filepath  = os.path.join(config.ATTENDANCE_LOG_DIR, filename)
         file_time = datetime.fromtimestamp(os.path.getmtime(filepath))
-
         if file_time < cutoff:
             os.remove(filepath)
             deleted += 1
@@ -124,7 +107,7 @@ def start_cleanup_scheduler():
 
     thread = threading.Thread(target=scheduler_loop, daemon=True)
     thread.start()
-    print("[SCHEDULER] CSV cleanup scheduler started — runs every 12 hours")
+    print("[SCHEDULER] CSV cleanup scheduler started")
 
 
 def clear_all_csv_logs():
@@ -134,7 +117,6 @@ def clear_all_csv_logs():
         return
 
     files = [f for f in os.listdir(config.ATTENDANCE_LOG_DIR) if f.endswith(".csv")]
-
     if not files:
         print("[CLEANUP] No CSV logs to delete")
         return

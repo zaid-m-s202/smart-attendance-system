@@ -26,9 +26,10 @@ def run_burst():
     known_ids       = data["ids"]
 
     # Open webcam
-    cap = cv2.VideoCapture(0)
+    print(f"[OK] Opening camera (index {config.CAMERA_INDEX})...")
+    cap = cv2.VideoCapture(config.CAMERA_INDEX)
     if not cap.isOpened():
-        print("[ERROR] Could not open webcam")
+        print("[ERROR] Could not open camera")
         return
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)

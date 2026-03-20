@@ -3,14 +3,14 @@
 
 <div class="page-header">
     {% if mode == 'lecture' %}
-        <h1>🏫 Lecture Sessions</h1>
-        <p>Attendance sessions recorded via Lecture Mode — saved in lecture.db</p>
+    <h1>🏫 Lecture Sessions</h1>
+    <p>Attendance sessions recorded via Lecture Mode — saved in lecture.db</p>
     {% elif mode == 'demo' %}
-        <h1>⚡ Demo Sessions</h1>
-        <p>Attendance sessions recorded via Demo Mode — saved in demo.db</p>
+    <h1>⚡ Demo Sessions</h1>
+    <p>Attendance sessions recorded via Demo Mode — saved in demo.db</p>
     {% else %}
-        <h1>📤 Upload Sessions</h1>
-        <p>Attendance sessions recorded via Photo Upload — saved in upload.db</p>
+    <h1>📤 Upload Sessions</h1>
+    <p>Attendance sessions recorded via Photo Upload — saved in upload.db</p>
     {% endif %}
 </div>
 
@@ -18,9 +18,12 @@
 <div class="card" style="padding:1rem 1.5rem;">
     <div style="display:flex; gap:0.8rem; align-items:center;">
         <span style="font-size:0.85rem; color:#888; font-weight:600;">VIEW MODE:</span>
-        <a href="/sessions/lecture" class="btn {{ 'btn-primary' if mode == 'lecture' else 'btn-outline' }}" style="padding:0.4rem 1rem; font-size:0.88rem;">🏫 Lecture</a>
-        <a href="/sessions/demo"    class="btn {{ 'btn-primary' if mode == 'demo'    else 'btn-outline' }}" style="padding:0.4rem 1rem; font-size:0.88rem;">⚡ Demo</a>
-        <a href="/sessions/upload"  class="btn {{ 'btn-primary' if mode == 'upload'  else 'btn-outline' }}" style="padding:0.4rem 1rem; font-size:0.88rem;">📤 Upload</a>
+        <a href="/sessions/lecture" class="btn {{ 'btn-primary' if mode == 'lecture' else 'btn-outline' }}"
+            style="padding:0.4rem 1rem; font-size:0.88rem;">🏫 Lecture</a>
+        <a href="/sessions/demo" class="btn {{ 'btn-primary' if mode == 'demo'    else 'btn-outline' }}"
+            style="padding:0.4rem 1rem; font-size:0.88rem;">⚡ Demo</a>
+        <a href="/sessions/upload" class="btn {{ 'btn-primary' if mode == 'upload'  else 'btn-outline' }}"
+            style="padding:0.4rem 1rem; font-size:0.88rem;">📤 Upload</a>
     </div>
 </div>
 
@@ -31,7 +34,7 @@
     <select class="select-input" onchange="window.location='/session/{{ mode }}/'+this.value">
         <option value="">— Select a session —</option>
         {% for s in sessions %}
-        <option value="{{ s.id }}" {{ 'selected' if selected and selected.id == s.id }}>
+        <option value="{{ s.id }}" {{ 'selected' if selected and selected.id==s.id }}>
             {% if mode == 'lecture' %}{{ s.subject }} — {% endif %}
             {{ s.date }} at {{ s.start_time }}
             {% if s.status == 'ongoing' %} (ongoing){% endif %}
@@ -73,18 +76,24 @@
     </div>
     <table class="table">
         <thead>
-            <tr><th>Student ID</th><th>Photos Detected</th><th>Status</th></tr>
+            <tr>
+                <th>Student ID</th>
+                <th>Name</th>
+                <th>Photos Detected</th>
+                <th>Status</th>
+            </tr>
         </thead>
         <tbody>
             {% for r in records %}
             <tr>
                 <td>{{ r.student_id }}</td>
+                <td>{{ r.name if r.name is defined else '—' }}</td>
                 <td>{{ r.photos_detected }} / {{ selected.total_photos }}</td>
                 <td>
                     {% if r.status == 'Present' %}
-                        <span class="badge badge-present">✓ Present</span>
+                    <span class="badge badge-present">✓ Present</span>
                     {% else %}
-                        <span class="badge badge-absent">✗ Absent</span>
+                    <span class="badge badge-absent">✗ Absent</span>
                     {% endif %}
                 </td>
             </tr>

@@ -4,6 +4,7 @@ import numpy as np
 import os
 import sys
 import time
+import pandas as pd
 from datetime import datetime, timedelta
 from collections import defaultdict
 
@@ -14,17 +15,10 @@ from src.attendance import mark_attendance
 
 
 def calculate_photo_times(start_time):
-    """
-    Calculates exactly when each of the 5 photos should be taken.
-    First photo at start + 2.5 mins
-    Last photo at end - 1.5 mins
-    Remaining 3 evenly distributed in between.
-    """
     end_time   = start_time + timedelta(minutes=config.LECTURE_DURATION_MINS)
     first_time = start_time + timedelta(minutes=config.LECTURE_FIRST_OFFSET)
     last_time  = end_time   - timedelta(minutes=config.LECTURE_LAST_OFFSET)
 
-    # Distribute 5 photos evenly between first and last
     total_gap = (last_time - first_time).total_seconds()
     interval  = total_gap / (config.LECTURE_PHOTO_COUNT - 1)
 
@@ -37,7 +31,6 @@ def calculate_photo_times(start_time):
 
 
 def capture_and_recognize(cap, known_encodings, known_names, known_ids, photo_num):
-    """Captures a photo and returns detected students."""
     print(f"\n[LECTURE] Capturing photo {photo_num}...")
 
     ret, frame = cap.read()
@@ -45,12 +38,11 @@ def capture_and_recognize(cap, known_encodings, known_names, known_ids, photo_nu
         print(f"[ERROR] Failed to capture photo {photo_num}")
         return {}
 
-    # Show captured frame briefly
     cv2.imshow(f"Lecture Capture — Photo {photo_num}", frame)
     cv2.waitKey(1000)
     cv2.destroyAllWindows()
 
-    rgb      = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    rgb       = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
     locations = face_recognition.face_locations(rgb, model=config.MODEL)
     encodings = face_recognition.face_encodings(rgb, locations)
 
@@ -85,7 +77,6 @@ def run_lecture():
     print("\n[LECTURE MODE] Smart Attendance — Lecture Session")
     print("="*50)
 
-    # ── Get lecture start time ──────────────────────────────────
     while True:
         try:
             time_input = input("\nEnter lecture start time (HH:MM, 24hr format): ").strip()
@@ -97,7 +88,6 @@ def run_lecture():
         except ValueError:
             print("[ERROR] Invalid format. Please enter time as HH:MM (e.g. 10:00)")
 
-    # Calculate photo schedule
     photo_times = calculate_photo_times(start_time)
     end_time    = start_time + timedelta(minutes=config.LECTURE_DURATION_MINS)
 
@@ -106,7 +96,6 @@ def run_lecture():
     for i, t in enumerate(photo_times, 1):
         print(f"  Photo {i} → {t.strftime('%H:%M:%S')}")
 
-    # Load encodings
     data = load_encodings(config.ENCODINGS_PATH)
     if data is None:
         return
@@ -115,17 +104,16 @@ def run_lecture():
     known_names     = data["names"]
     known_ids       = data["ids"]
 
-    # Open webcam
-    cap = cv2.VideoCapture(0)
+    print(f"[OK] Opening camera (index {config.CAMERA_INDEX})...")
+    cap = cv2.VideoCapture(config.CAMERA_INDEX)
     if not cap.isOpened():
-        print("[ERROR] Could not open webcam")
+        print("[ERROR] Could not open camera")
         return
 
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
     detection_counts = defaultdict(int)
-    detection_ids    = {}
 
     print(f"\n[WAITING] System ready — waiting for first photo time...")
     print(f"[INFO] Press Ctrl+C to cancel\n")
@@ -134,20 +122,17 @@ def run_lecture():
         for photo_num, photo_time in enumerate(photo_times, 1):
             now = datetime.now()
 
-            # If scheduled time is in the future — wait for it
             if photo_time > now:
                 wait_secs = (photo_time - now).total_seconds()
                 print(f"[WAITING] Photo {photo_num} scheduled at {photo_time.strftime('%H:%M:%S')} — waiting {int(wait_secs)}s...")
                 time.sleep(wait_secs)
 
-            # Capture and recognize
             detected = capture_and_recognize(
                 cap, known_encodings, known_names, known_ids, photo_num
             )
 
             for name, info in detected.items():
                 detection_counts[name] += 1
-                detection_ids[name]     = info["id"]
 
             remaining = config.LECTURE_PHOTO_COUNT - photo_num
             if remaining > 0:
@@ -161,12 +146,8 @@ def run_lecture():
         cap.release()
         cv2.destroyAllWindows()
 
-    # ── Final Attendance Decision ───────────────────────────────
-    import pandas as pd
-
     print(f"\n{'='*50}")
     print(f"  LECTURE ATTENDANCE RESULTS")
-    print(f"  Subject  : {config.SUBJECT_NAME}")
     print(f"  Date     : {datetime.now().strftime(config.DATE_FORMAT)}")
     print(f"  Photos   : {len(photo_times)} taken")
     print(f"  Threshold: {config.LECTURE_THRESHOLD} of {config.LECTURE_PHOTO_COUNT}")
@@ -182,7 +163,7 @@ def run_lecture():
         count      = detection_counts.get(name, 0)
 
         if count >= config.LECTURE_THRESHOLD:
-            success = mark_attendance(student_id, name)
+            success = mark_attendance(student_id, name, mode="lecture")
             status  = "Present" if success else "Already marked"
             marked.append(name)
         else:
