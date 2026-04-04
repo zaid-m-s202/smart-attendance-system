@@ -10,15 +10,20 @@ ATTENDANCE_LOG_DIR = os.path.join(BASE_DIR, "attendance_logs")
 STUDENTS_CSV       = os.path.join(BASE_DIR, "data", "students.csv")
 UPLOAD_SCAN_FOLDER = os.path.join(BASE_DIR, "upload_scan")
 
+# ── Separate Databases per Mode ────────────────────────────────
+DEMO_DB_PATH       = os.path.join(BASE_DIR, "data", "demo.db")
+UPLOAD_DB_PATH     = os.path.join(BASE_DIR, "data", "upload.db")
+LECTURE_DB_PATH    = os.path.join(BASE_DIR, "data", "lecture.db")
+
 # ── Camera Source ──────────────────────────────────────────────
-CAMERA_INDEX       = 1  # 0 = built-in laptop cam, 1 = USB webcam
+CAMERA_INDEX       = 1
 
 # ── Recognition Settings ───────────────────────────────────────
 TOLERANCE          = 0.45
 MIN_FACE_DISTANCE  = 0.45
 FRAME_THICKNESS    = 2
 FONT_SCALE         = 0.7
-MODEL              = "hog"  # hog = CPU, cnn = GPU
+MODEL              = "hog"
 
 # ── Frame Processing ───────────────────────────────────────────
 RESIZE_SCALE       = 0.5
@@ -49,5 +54,14 @@ LECTURE_LAST_OFFSET   = 1.5
 LECTURE_THRESHOLD     = 3
 
 # ── Upload Mode ────────────────────────────────────────────────
-UPLOAD_THRESHOLD  = 3   # Must appear in 3 of 5 to be Present
-UPLOAD_PHOTO_MAX  = 5   # Max photos per upload session
+UPLOAD_THRESHOLD  = 3
+UPLOAD_PHOTO_MAX  = 5
+
+# ── Flask Server ───────────────────────────────────────────────
+FLASK_HOST        = "0.0.0.0"
+FLASK_PORT        = 5000
+UPLOAD_FOLDER     = os.path.join(BASE_DIR, "received_photos")
+
+# ── Subject / Class ────────────────────────────────────────────
+SUBJECT_NAME      = "Computer Science"
+TOTAL_PHOTOS      = 5

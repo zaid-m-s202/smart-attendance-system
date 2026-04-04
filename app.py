@@ -276,6 +276,7 @@ def process_upload_session(files):
         encodings = face_recognition.face_encodings(rgb, locations)
 
         detected_in_photo = []
+        detected_names_this_photo = set()  # prevent double-counting in same photo
         for encoding in encodings:
             distances = face_recognition.face_distance(known_encodings, encoding)
             matches   = face_recognition.compare_faces(
@@ -289,9 +290,11 @@ def process_upload_session(files):
                 name       = known_names[best_idx]
                 student_id = known_ids[best_idx]
                 confidence = round((1 - best_dist) * 100, 1)
-                detection_counts[name] += 1
-                log_photo_detection("upload", session_id, i,
-                                    str(student_id), confidence)
+                if name not in detected_names_this_photo:   # only count once per photo
+                    detected_names_this_photo.add(name)
+                    detection_counts[name] += 1
+                    log_photo_detection("upload", session_id, i,
+                                        str(student_id), confidence)
                 detected_in_photo.append({"name": name, "confidence": confidence})
 
         photo_results.append({
